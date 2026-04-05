@@ -19,14 +19,22 @@ public class MusicService extends Service {
         return null;
     }
 
+
     @Override
     public void onCreate() {
         super.onCreate();
         mediaPlayer = MediaPlayer.create(this, R.raw.muzyka);
+        mediaPlayerStatic = mediaPlayer;
+
         if (mediaPlayer != null) {
             mediaPlayer.setLooping(true);
-            mediaPlayer.setVolume(0.5f, 0.5f);
-            // ZMIANA: Usunąłem tutaj mediaPlayer.start()
+
+            android.content.SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
+            int savedVolume = prefs.getInt("volume", 50);
+            float vol = savedVolume / 100f;
+
+            mediaPlayer.setVolume(vol, vol);
+            //Zmieniłem żeby działało z ustawieniami
         }
     }
 
@@ -40,6 +48,8 @@ public class MusicService extends Service {
 
         return START_STICKY;
     }
+
+    public static MediaPlayer mediaPlayerStatic;
 
     private void startMusic() {
         if (mediaPlayer != null) {
@@ -73,6 +83,7 @@ public class MusicService extends Service {
             mediaPlayer.release();
             mediaPlayer = null;
         }
+        mediaPlayerStatic = null; //Dodałem
         isMusicPlaying = false;
     }
 }

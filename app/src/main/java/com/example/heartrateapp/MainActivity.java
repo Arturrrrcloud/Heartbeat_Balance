@@ -44,7 +44,16 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(MainActivity.this, MeasurementActivity.class));
         });
 
-        // Tutaj reszta Twoich przycisków (Settings, Relax itp.)
+        //Ustawienia
+        findViewById(R.id.btnSettings).setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+        });
+
+        findViewById(R.id.btnRelax).setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, RelaxMenuActivity.class));
+        });
+
+        // Tutaj reszta Twoich przycisków (itp.)
     }
 
     private void updateMusicIcon(FloatingActionButton btn) {

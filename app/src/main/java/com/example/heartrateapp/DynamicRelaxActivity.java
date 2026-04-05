@@ -21,13 +21,8 @@ public class DynamicRelaxActivity extends AppCompatActivity {
         }
     }
 
-    private final Step[] steps = new Step[] {
-            new Step("Rozgrzewka", "Stań prosto. 6 spokojnych wdechów i wydechów.", 30),
-            new Step("Dynamiczny ruch", "Unieś ręce w górę przy wdechu, opuść przy wydechu.", 30),
-            new Step("Rozluźnienie", "Zrób krążenia barków i rozluźnij szczękę.", 30),
-            new Step("Schłodzenie", "Oddychaj wolno: wdech 4s, wydech 6s.", 40)
-    };
-
+    //Changed: added to Oncreate
+    private Step[] steps;
     private int currentStep = 0;
     private boolean running = false;
     private long remainingMs = 0;
@@ -44,6 +39,16 @@ public class DynamicRelaxActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dynamic_relax);
+
+        int defaultTime = getSharedPreferences("settings", MODE_PRIVATE)
+                .getInt("time", 30);
+
+        steps = new Step[] {
+                new Step("Rozgrzewka", "Stań prosto. 6 spokojnych wdechów i wydechów.", defaultTime),
+                new Step("Dynamiczny ruch", "Unieś ręce w górę przy wdechu, opuść przy wydechu.", defaultTime),
+                new Step("Rozluźnienie", "Zrób krążenia barków i rozluźnij szczękę.", defaultTime),
+                new Step("Schłodzenie", "Oddychaj wolno: wdech 4s, wydech 6s.", defaultTime)
+        };
 
         txtStepTitle = findViewById(R.id.txtStepTitle);
         txtStepHint = findViewById(R.id.txtStepHint);
