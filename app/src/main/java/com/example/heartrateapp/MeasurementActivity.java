@@ -24,6 +24,7 @@ import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.concurrent.ExecutionException;
@@ -111,24 +112,35 @@ public class MeasurementActivity extends AppCompatActivity {
         try {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             LayoutInflater inflater = this.getLayoutInflater();
-            // Upewnij się, że plik dialog_instructions.xml istnieje!
+
+            // Pompowanie (ładowanie) widoku z Twojego XML
             View dialogView = inflater.inflate(R.layout.activity_instructions, null);
             builder.setView(dialogView);
 
+            // Znajdujemy ImageView, do którego trafi GIF
+            android.widget.ImageView gifImageView = dialogView.findViewById(R.id.imgInstructionGif);
+
+            // Ładowanie GIF-a za pomocą Glide
+            Glide.with(this)
+                    .asGif()
+                    .load(R.drawable.palec_tel) // To odnosi się do Twojego pliku w drawable
+                    .into(gifImageView);
+
             AlertDialog dialog = builder.create();
-            // Przezroczyste tło dla ładnych zaokrąglonych rogów
+
+            // Ustawienie przezroczystego tła pod CardView (żeby nie było białych rogów)
             if (dialog.getWindow() != null) {
                 dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             }
+
             dialog.show();
 
-            // Obsługa przycisku "Zamknij" wewnątrz okienka
+            // Obsługa przycisku zamknięcia
             Button btnClose = dialogView.findViewById(R.id.btnCloseDialog);
             btnClose.setOnClickListener(v -> dialog.dismiss());
 
         } catch (Exception e) {
-            // Jeśli coś pójdzie nie tak, wyświetli się komunikat błędu
-            Toast.makeText(this, "Błąd otwarcia instrukcji: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Błąd instrukcji: " + e.getMessage(), Toast.LENGTH_LONG).show();
             e.printStackTrace();
         }
     }
