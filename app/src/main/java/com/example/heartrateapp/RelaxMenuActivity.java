@@ -15,15 +15,15 @@ public class RelaxMenuActivity extends AppCompatActivity {
         setContentView(R.layout.activity_relax_menu);
 
         MaterialCardView cardDynamicRelax = findViewById(R.id.cardDynamicRelax);
-        MaterialCardView cardGame2048 = findViewById(R.id.cardGame2048);
+        MaterialCardView cardRelaxGame = findViewById(R.id.cardRelaxGame);
 
         cardDynamicRelax.setOnClickListener(v -> {
             Intent intent = new Intent(RelaxMenuActivity.this, DynamicRelaxActivity.class);
             startActivity(intent);
         });
 
-        cardGame2048.setOnClickListener(v -> {
-            Intent intent = new Intent(RelaxMenuActivity.this, Game2048Activity.class);
+        cardRelaxGame.setOnClickListener(v -> {
+            Intent intent = new Intent(RelaxMenuActivity.this, RelaxGameActivity.class);
             startActivity(intent);
         });
 

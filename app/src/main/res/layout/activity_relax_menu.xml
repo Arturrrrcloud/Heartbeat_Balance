@@ -38,7 +38,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🧘 Ćwiczenia dynamiczne"
+                android:text="🏃 Ćwiczenia bez sprzętu"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
@@ -46,15 +46,16 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Krótka sekwencja ruch + oddech (timer)"
+                android:text="5 prostych ćwiczeń po 4 minuty"
                 android:textSize="12sp"
                 android:textColor="@color/text_hint"
                 android:layout_marginTop="8dp" />
+
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardGame2048"
+        android:id="@+id/cardRelaxGame"
         android:layout_width="match_parent"
         android:layout_height="140dp"
         android:layout_marginBottom="24dp"
@@ -73,7 +74,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🧩 Gra 2048"
+                android:text="🌿 Gra relaksująca"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
@@ -81,10 +82,11 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Puzzle na uspokojenie i reset"
+                android:text="Spokojny ogród i ćwiczenie oddechu"
                 android:textSize="12sp"
                 android:textColor="@color/text_hint"
                 android:layout_marginTop="8dp" />
+
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

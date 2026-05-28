@@ -28,7 +28,7 @@
             android:name=".DynamicRelaxActivity"
             android:exported="false" />
         <activity
-            android:name=".Game2048Activity"
+            android:name=".RelaxGameActivity"
             android:exported="false" />
         <activity
             android:name=".MeasurementActivity"
