@@ -173,15 +173,15 @@ public class MeasurementActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onSignalUpdate(double signalValue, boolean isPeak) {
+                    public void onSignalUpdate(double signalValue, boolean isPeak, boolean isSignalGood) {
                         runOnUiThread(() -> {
                             if (graphView != null) {
-                                // Wysyłamy wartość i informację, czy rysować kropkę!
-                                graphView.addDataPoint((float) signalValue, isPeak);
+                                // Przekazujemy wszystkie 3 parametry do wykresu
+                                graphView.addDataPoint((float) signalValue, isPeak, isSignalGood);
                             }
                         });
                     }
-                }));
+                }));;
 
                 CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
 

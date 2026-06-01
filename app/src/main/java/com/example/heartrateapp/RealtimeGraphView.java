@@ -16,40 +16,54 @@ import java.util.List;
 
 public class RealtimeGraphView extends View {
 
-    // Klasa przechowująca pojedynczy punkt na wykresie
     private static class PointData {
         float value;
-        boolean isPeak; // Czy to uderzenie serca?
+        boolean isPeak;
         PointData(float v, boolean p) { value = v; isPeak = p; }
     }
 
     private final Paint linePaint = new Paint();
-    private final Paint peakPaint = new Paint(); // Pędzel do kropek
+    private final Paint peakPaint = new Paint();
+    private final Paint bgPaintGood = new Paint();
+    private final Paint bgPaintBad = new Paint();
+
     private final Path graphPath = new Path();
     private final List<PointData> dataPoints = new ArrayList<>();
 
     private static final int MAX_POINTS = 100;
 
+    // Zmienna przechowująca aktualny status od algorytmu
+    private boolean isSignalGood = false;
+
     public RealtimeGraphView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+
         linePaint.setColor(ContextCompat.getColor(context, R.color.calm_accent));
         linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setStrokeWidth(6f);
         linePaint.setAntiAlias(true);
         linePaint.setStrokeJoin(Paint.Join.ROUND);
 
-        // Wygląd kropki uderzenia serca
-        peakPaint.setColor(Color.WHITE); // Zrobiłem białą, żeby ładnie kontrastowała na turkusowej linii
+        peakPaint.setColor(Color.WHITE);
         peakPaint.setStyle(Paint.Style.FILL);
         peakPaint.setAntiAlias(true);
+
+        bgPaintGood.setColor(Color.parseColor("#4CAF50"));
+        bgPaintGood.setStyle(Paint.Style.FILL);
+        bgPaintGood.setAlpha(130);
+
+        bgPaintBad.setColor(Color.parseColor("#000000"));
+        bgPaintBad.setStyle(Paint.Style.FILL);
+        bgPaintBad.setAlpha(130);
     }
 
-    // Dodano drugi parametr: isPeak
-    public void addDataPoint(float value, boolean isPeak) {
+    // Dodano odbieranie parametru isGood
+    public void addDataPoint(float value, boolean isPeak, boolean isGood) {
         dataPoints.add(new PointData(value, isPeak));
         if (dataPoints.size() > MAX_POINTS) {
             dataPoints.remove(0);
         }
+        this.isSignalGood = isGood; // Aktualizujemy status tła
         invalidate();
     }
 
@@ -68,12 +82,18 @@ public class RealtimeGraphView extends View {
         float range = max - min;
         if (range == 0) range = 1;
 
+        // Rysowanie tła na podstawie odebranego statusu
+        if (isSignalGood) {
+            canvas.drawRect(0, 0, getWidth(), getHeight(), bgPaintGood);
+        } else {
+            canvas.drawRect(0, 0, getWidth(), getHeight(), bgPaintBad);
+        }
+
         graphPath.reset();
         float width = getWidth();
         float height = getHeight();
         float stepX = width / (MAX_POINTS - 1);
 
-        // 1. Najpierw rysujemy linię wykresu
         for (int i = 0; i < dataPoints.size(); i++) {
             float x = i * stepX;
             float normalizedValue = (dataPoints.get(i).value - min) / range;
@@ -87,14 +107,11 @@ public class RealtimeGraphView extends View {
         }
         canvas.drawPath(graphPath, linePaint);
 
-        // 2. Potem rysujemy kropki w miejscach "Peak" (żeby były na wierzchu linii)
         for (int i = 0; i < dataPoints.size(); i++) {
             if (dataPoints.get(i).isPeak) {
                 float x = i * stepX;
                 float normalizedValue = (dataPoints.get(i).value - min) / range;
                 float y = normalizedValue * height;
-
-                // Rysujemy kółko o promieniu 10 pikseli
                 canvas.drawCircle(x, y, 10f, peakPaint);
             }
         }
