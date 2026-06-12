@@ -53,6 +53,15 @@
         android:layout_marginBottom="10dp"/>
 
     <Button
+        android:id="@+id/btnHistory"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Zobacz Historię"
+        android:textColor="@color/text_primary"
+        android:backgroundTint="@color/calm_surface"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
         android:id="@+id/btnHome"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

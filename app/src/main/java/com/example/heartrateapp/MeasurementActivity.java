@@ -81,10 +81,6 @@ public class MeasurementActivity extends AppCompatActivity {
             btnStart.setVisibility(View.INVISIBLE);
             btnInstruction.setVisibility(View.INVISIBLE);
 
-            // Ukrywamy OBA przyciski, żeby nie przeszkadzały podczas pomiaru
-            btnStart.setVisibility(View.GONE);
-            btnInstruction.setVisibility(View.GONE);
-
             // Resetujemy wynik i startujemy timer
             currentHeartRate = 0;
             txtTimer.setText("Przygotowanie...");

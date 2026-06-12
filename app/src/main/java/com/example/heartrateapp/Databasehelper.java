@@ -11,14 +11,14 @@ import java.util.List;
 
 public class Databasehelper extends SQLiteOpenHelper {
 
-    private static final String DB_NAME    = "heartrateapp.db";
+    private static final String DB_NAME    = "heartrate_stable_final.db";
     private static final int    DB_VERSION = 1;
 
     public static final String TABLE_NAME  = "heart_rate_results";
-    public static final String COL_ID        = "_id";
-    public static final String COL_BPM       = "bpm";
-    public static final String COL_TIMESTAMP = "timestamp";
-    public static final String COL_NOTE      = "note";
+    public static final String COL_ID      = "_id";
+    public static final String COL_BPM     = "bpm";
+    public static final String COL_TIME    = "timestamp";
+    public static final String COL_NOTE    = "note";
 
     private static Databasehelper instance;
 
@@ -35,14 +35,11 @@ public class Databasehelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String createTable =
-                "CREATE TABLE " + TABLE_NAME + " (" +
-                        COL_ID        + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                        COL_BPM       + " INTEGER NOT NULL, " +
-                        COL_TIMESTAMP + " INTEGER NOT NULL, " +
-                        COL_NOTE      + " TEXT" +
-                        ");";
-        db.execSQL(createTable);
+        db.execSQL("CREATE TABLE " + TABLE_NAME + " (" +
+                COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COL_BPM + " INTEGER, " +
+                COL_TIME + " INTEGER, " +
+                COL_NOTE + " TEXT)");
     }
 
     @Override
@@ -52,59 +49,68 @@ public class Databasehelper extends SQLiteOpenHelper {
     }
 
     public long insertResult(int bpm, String note) {
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(COL_BPM, bpm);
-        values.put(COL_TIMESTAMP, System.currentTimeMillis());
-        values.put(COL_NOTE, note != null ? note : "");
-        return db.insert(TABLE_NAME, null, values);
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(COL_BPM, bpm);
+            values.put(COL_TIME, System.currentTimeMillis());
+            values.put(COL_NOTE, note != null ? note : "");
+            return db.insert(TABLE_NAME, null, values);
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     public List<Heartraterecord> getAllResults() {
         List<Heartraterecord> list = new ArrayList<>();
-        SQLiteDatabase db = getReadableDatabase();
-
-        Cursor cursor = db.query(
-                TABLE_NAME,
-                null,
-                null, null,
-                null, null,
-                COL_TIMESTAMP + " DESC"
-        );
-
-        if (cursor != null && cursor.moveToFirst()) {
-            do {
-                int    id        = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));
-                int    bpm       = cursor.getInt(cursor.getColumnIndexOrThrow(COL_BPM));
-                long   timestamp = cursor.getLong(cursor.getColumnIndexOrThrow(COL_TIMESTAMP));
-                String note      = cursor.getString(cursor.getColumnIndexOrThrow(COL_NOTE));
-                list.add(new Heartraterecord(id, bpm, timestamp, note));
-            } while (cursor.moveToNext());
-            cursor.close();
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor cursor = db.query(TABLE_NAME, null, null, null, null, null, COL_TIME + " DESC");
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    int idIdx = cursor.getColumnIndexOrThrow(COL_ID);
+                    int bpmIdx = cursor.getColumnIndexOrThrow(COL_BPM);
+                    int timeIdx = cursor.getColumnIndexOrThrow(COL_TIME);
+                    int noteIdx = cursor.getColumnIndexOrThrow(COL_NOTE);
+                    do {
+                        list.add(new Heartraterecord(
+                                cursor.getInt(idIdx),
+                                cursor.getInt(bpmIdx),
+                                cursor.getLong(timeIdx),
+                                cursor.getString(noteIdx)
+                        ));
+                    } while (cursor.moveToNext());
+                }
+                cursor.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return list;
     }
 
-    public int deleteResult(int id) {
-        SQLiteDatabase db = getWritableDatabase();
-        return db.delete(TABLE_NAME, COL_ID + "=?", new String[]{String.valueOf(id)});
-    }
-
-    public void deleteAllResults() {
-        SQLiteDatabase db = getWritableDatabase();
-        db.delete(TABLE_NAME, null, null);
-    }
-
     public double getAverageBpm() {
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT AVG(" + COL_BPM + ") FROM " + TABLE_NAME, null);
         double avg = 0;
-        if (cursor != null) {
-            if (cursor.moveToFirst() && !cursor.isNull(0)) {
-                avg = cursor.getDouble(0);
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor c = db.rawQuery("SELECT AVG(" + COL_BPM + ") FROM " + TABLE_NAME, null);
+            if (c != null && c.moveToFirst()) {
+                avg = c.getDouble(0);
+                c.close();
             }
-            cursor.close();
-        }
+        } catch (Exception e) {}
         return avg;
+    }
+
+    public void deleteOne(int id) {
+        try {
+            getWritableDatabase().delete(TABLE_NAME, COL_ID + "=?", new String[]{String.valueOf(id)});
+        } catch (Exception e) {}
+    }
+
+    public void deleteAll() {
+        try {
+            getWritableDatabase().delete(TABLE_NAME, null, null);
+        } catch (Exception e) {}
     }
 }

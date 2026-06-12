@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,12 +16,13 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Historyactivity extends AppCompatActivity {
 
     private Databasehelper db;
-    private List<Heartraterecord> records;
+    private List<Heartraterecord> records = new ArrayList<>();
     private HistoryAdapter adapter;
 
     private TextView txtAvgBpm;
@@ -30,83 +32,92 @@ public class Historyactivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_history);
+        try {
+            setContentView(R.layout.activity_history);
 
-        db           = Databasehelper.getInstance(this);
-        txtAvgBpm    = findViewById(R.id.txtAvgBpm);
-        txtNoData    = findViewById(R.id.txtNoData);
-        listHistory  = findViewById(R.id.listHistory);
+            db = Databasehelper.getInstance(this);
+            
+            txtAvgBpm    = findViewById(R.id.txtAvgBpm);
+            txtNoData    = findViewById(R.id.txtNoData);
+            listHistory  = findViewById(R.id.listHistory);
 
-        Button btnClearAll = findViewById(R.id.btnClearHistory);
-        if (btnClearAll != null) {
-            btnClearAll.setOnClickListener(v -> confirmClearAll());
+            Button btnClearAll = findViewById(R.id.btnClearHistory);
+            if (btnClearAll != null) {
+                btnClearAll.setOnClickListener(v -> confirmClearAll());
+            }
+
+            View btnBack = findViewById(R.id.btnHistoryBack);
+            if (btnBack != null) {
+                btnBack.setOnClickListener(v -> finish());
+            }
+
+            loadData();
+            
+        } catch (Exception e) {
+            Log.e("Historyactivity", "Crash in onCreate", e);
+            Toast.makeText(this, "Błąd: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            finish();
         }
-
-        View btnBack = findViewById(R.id.btnHistoryBack);
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
-        }
-
-        loadData();
     }
 
     private void loadData() {
-        records = db.getAllResults();
+        try {
+            records = db.getAllResults();
 
-        if (records.isEmpty()) {
-            txtNoData.setVisibility(View.VISIBLE);
-            listHistory.setVisibility(View.GONE);
-            txtAvgBpm.setText("Brak danych");
-            return;
+            if (records == null || records.isEmpty()) {
+                if (txtNoData != null) txtNoData.setVisibility(View.VISIBLE);
+                if (listHistory != null) listHistory.setVisibility(View.GONE);
+                if (txtAvgBpm != null) txtAvgBpm.setText("Brak danych");
+                return;
+            }
+
+            if (txtNoData != null) txtNoData.setVisibility(View.GONE);
+            if (listHistory != null) listHistory.setVisibility(View.VISIBLE);
+
+            double avg = db.getAverageBpm();
+            if (txtAvgBpm != null) {
+                txtAvgBpm.setText(String.format(java.util.Locale.getDefault(), "Średnia: %.0f BPM", avg));
+            }
+
+            adapter = new HistoryAdapter(this, records);
+            if (listHistory != null) {
+                listHistory.setAdapter(adapter);
+                listHistory.setOnItemLongClickListener((parent, view, position, id) -> {
+                    if (position >= 0 && position < records.size()) {
+                        confirmDeleteSingle(records.get(position), position);
+                    }
+                    return true;
+                });
+            }
+        } catch (Exception e) {
+            Log.e("Historyactivity", "Error loading data", e);
         }
-
-        txtNoData.setVisibility(View.GONE);
-        listHistory.setVisibility(View.VISIBLE);
-
-        double avg = db.getAverageBpm();
-        txtAvgBpm.setText(String.format("Średnia: %.0f BPM", avg));
-
-        adapter = new HistoryAdapter(this, records);
-        listHistory.setAdapter(adapter);
-
-        listHistory.setOnItemLongClickListener((parent, view, position, id) -> {
-            Heartraterecord record = records.get(position);
-            confirmDeleteSingle(record, position);
-            return true;
-        });
     }
 
     private void confirmDeleteSingle(Heartraterecord record, int position) {
         new AlertDialog.Builder(this)
                 .setTitle("Usuń pomiar")
-                .setMessage("Usunąć pomiar " + record.getBpm() + " BPM z dnia " + record.getFormattedDate() + "?")
+                .setMessage("Usunąć ten pomiar?")
                 .setPositiveButton("Usuń", (dialog, which) -> {
-                    db.deleteResult(record.getId());
+                    db.deleteOne(record.getId()); // Poprawiono nazwę metody
                     records.remove(position);
-                    adapter.notifyDataSetChanged();
+                    if (adapter != null) adapter.notifyDataSetChanged();
                     updateStats();
-                    Toast.makeText(this, "Pomiar usunięty", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Anuluj", null)
                 .show();
     }
 
     private void confirmClearAll() {
-        if (records == null || records.isEmpty()) {
-            Toast.makeText(this, "Brak historii do usunięcia", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (records.isEmpty()) return;
         new AlertDialog.Builder(this)
                 .setTitle("Wyczyść historię")
-                .setMessage("Czy na pewno chcesz usunąć wszystkie " + records.size() + " pomiarów?")
+                .setMessage("Usunąć wszystkie wpisy?")
                 .setPositiveButton("Wyczyść", (dialog, which) -> {
-                    db.deleteAllResults();
+                    db.deleteAll(); // Poprawiono nazwę metody
                     records.clear();
-                    adapter.notifyDataSetChanged();
+                    if (adapter != null) adapter.notifyDataSetChanged();
                     updateStats();
-                    txtNoData.setVisibility(View.VISIBLE);
-                    listHistory.setVisibility(View.GONE);
-                    Toast.makeText(this, "Historia wyczyszczona", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Anuluj", null)
                 .show();
@@ -114,12 +125,14 @@ public class Historyactivity extends AppCompatActivity {
 
     private void updateStats() {
         if (records.isEmpty()) {
-            txtAvgBpm.setText("Brak danych");
-            txtNoData.setVisibility(View.VISIBLE);
-            listHistory.setVisibility(View.GONE);
+            if (txtAvgBpm != null) txtAvgBpm.setText("Brak danych");
+            if (txtNoData != null) txtNoData.setVisibility(View.VISIBLE);
+            if (listHistory != null) listHistory.setVisibility(View.GONE);
         } else {
             double avg = db.getAverageBpm();
-            txtAvgBpm.setText(String.format("Średnia: %.0f BPM", avg));
+            if (txtAvgBpm != null) {
+                txtAvgBpm.setText(String.format(java.util.Locale.getDefault(), "Średnia: %.0f BPM", avg));
+            }
         }
     }
 
@@ -136,32 +149,22 @@ public class Historyactivity extends AppCompatActivity {
             }
 
             Heartraterecord record = getItem(position);
-            if (record == null) return convertView;
+            if (record != null) {
+                TextView txtBpm      = convertView.findViewById(R.id.txtRowBpm);
+                TextView txtDate     = convertView.findViewById(R.id.txtRowDate);
+                TextView txtCategory = convertView.findViewById(R.id.txtRowCategory);
 
-            TextView txtBpm      = convertView.findViewById(R.id.txtRowBpm);
-            TextView txtDate     = convertView.findViewById(R.id.txtRowDate);
-            TextView txtCategory = convertView.findViewById(R.id.txtRowCategory);
-
-            txtBpm.setText(record.getBpm() + " BPM");
-            txtDate.setText(record.getFormattedDate());
-
-            String category = record.getBpmCategory();
-            txtCategory.setText(category);
-
-            switch (category) {
-                case "Wolne":
-                    txtCategory.setTextColor(Color.parseColor("#64B5F6"));
-                    break;
-                case "Normalne":
-                    txtCategory.setTextColor(Color.parseColor("#81C784"));
-                    break;
-                case "Szybkie":
-                    txtCategory.setTextColor(Color.parseColor("#E57373"));
-                    break;
-                default:
-                    txtCategory.setTextColor(Color.GRAY);
+                if (txtBpm != null) txtBpm.setText(record.getBpm() + " BPM");
+                if (txtDate != null) txtDate.setText(record.getFormattedDate());
+                
+                String category = record.getBpmCategory();
+                if (txtCategory != null) {
+                    txtCategory.setText(category);
+                    if (category.equals("Wolne")) txtCategory.setTextColor(Color.parseColor("#90CAF9"));
+                    else if (category.equals("Normalne")) txtCategory.setTextColor(Color.parseColor("#A5D6A7"));
+                    else txtCategory.setTextColor(Color.parseColor("#FF8A80"));
+                }
             }
-
             return convertView;
         }
     }
