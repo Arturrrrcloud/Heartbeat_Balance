@@ -1,5 +1,6 @@
 package com.example.heartrateapp;
 
+import android.app.AlertDialog;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -16,18 +17,16 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class DynamicRelaxActivity extends AppCompatActivity {
 
-    private static final int EXERCISE_TIME_SECONDS = 240;
+    private static final int TOTAL_TIME_SECONDS = 240;
 
     private static class Step {
         final String title;
         final String hint;
-        final int seconds;
         final String videoName;
 
-        Step(String title, String hint, int seconds, String videoName) {
+        Step(String title, String hint, String videoName) {
             this.title = title;
             this.hint = hint;
-            this.seconds = seconds;
             this.videoName = videoName;
         }
     }
@@ -35,7 +34,7 @@ public class DynamicRelaxActivity extends AppCompatActivity {
     private Step[] steps;
     private int currentStep = 0;
     private boolean running = false;
-    private long remainingMs = 0;
+    private long remainingMs = TOTAL_TIME_SECONDS * 1000L;
     private CountDownTimer timer;
 
     private TextView txtStepTitle;
@@ -43,6 +42,8 @@ public class DynamicRelaxActivity extends AppCompatActivity {
     private TextView txtStepTimer;
     private TextView txtStepCounter;
     private TextView txtVideoHint;
+
+    private TextView[] stepTabs;
 
     private VideoView videoPreview;
 
@@ -60,40 +61,35 @@ public class DynamicRelaxActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        createLayout();
-
         steps = new Step[] {
                 new Step(
                         "Przysiady",
                         "Stań prosto, ustaw stopy na szerokość bioder. Powoli ugnij kolana, zejdź w dół jak do siadania na krześle, a następnie wróć do pozycji stojącej. Plecy trzymaj prosto.",
-                        EXERCISE_TIME_SECONDS,
                         "exercise_squats"
                 ),
                 new Step(
                         "Pajacyki",
                         "Stań prosto z rękami wzdłuż ciała. Wykonuj podskoki z jednoczesnym rozkładaniem nóg i unoszeniem rąk nad głowę. Ćwicz spokojnym tempem.",
-                        EXERCISE_TIME_SECONDS,
                         "exercise_jumping_jacks"
                 ),
                 new Step(
                         "Marsz w miejscu",
                         "Maszeruj w miejscu, unosząc kolana na wygodną wysokość. Pracuj rękami naturalnie jak podczas zwykłego marszu. Oddychaj równo.",
-                        EXERCISE_TIME_SECONDS,
                         "exercise_march"
                 ),
                 new Step(
                         "Pompki",
                         "Przyjmij pozycję podporu przodem. Dłonie ustaw pod barkami, ciało trzymaj w jednej linii. Uginaj łokcie i opuszczaj klatkę w stronę podłoża, a potem wróć do góry. Możesz wykonywać pompki na kolanach.",
-                        EXERCISE_TIME_SECONDS,
                         "exercise_pushups"
                 ),
                 new Step(
                         "Krążenia ramion",
                         "Stań swobodnie i wykonuj powolne krążenia ramionami. Najpierw krąż do przodu, a w połowie czasu zmień kierunek do tyłu.",
-                        EXERCISE_TIME_SECONDS,
                         "exercise_arm_circles"
                 )
         };
+
+        createLayout();
 
         btnStartPause.setOnClickListener(v -> {
             if (running) {
@@ -116,11 +112,77 @@ public class DynamicRelaxActivity extends AppCompatActivity {
         });
 
         setStep(0);
+        updateTimerText(remainingMs);
+
+        // NOWOŚĆ: Wyświetlamy okienko powitalne po załadowaniu ekranu
+        showWelcomeDialog();
     }
+
+    // --- NOWOŚĆ: Budowanie i wyświetlanie okienka powitalnego z kodu ---
+    private void showWelcomeDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        // Tworzenie kontenera dla nakładki
+        LinearLayout dialogLayout = new LinearLayout(this);
+        dialogLayout.setOrientation(LinearLayout.VERTICAL);
+        dialogLayout.setPadding(dp(24), dp(24), dp(24), dp(24));
+
+        // Ustawianie zaokrąglonego tła w kolorze calmSurface
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
+        shape.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        shape.setCornerRadius(dp(16));
+        shape.setColor(calmSurface);
+        dialogLayout.setBackground(shape);
+
+        // Tytuł
+        TextView title = new TextView(this);
+        title.setText("Plan Treningu");
+        title.setTextColor(calmAccent);
+        title.setTextSize(22);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0, 0, 0, dp(16));
+        dialogLayout.addView(title);
+
+        // Opis z listą ćwiczeń
+        TextView desc = new TextView(this);
+        desc.setText("Przed Tobą zestaw 5 ćwiczeń relaksacyjnych:\n\n" +
+                "1. Przysiady\n" +
+                "2. Pajacyki\n" +
+                "3. Marsz w miejscu\n" +
+                "4. Pompki\n" +
+                "5. Krążenia ramion\n\n" +
+                "Masz na nie łącznie 4 minuty. Sam decydujesz, ile czasu spędzisz na każdym z nich. Po prostu używaj przycisków Wstecz i Dalej, by przechodzić do kolejnych zadań we własnym tempie.");
+        desc.setTextColor(textPrimary);
+        desc.setTextSize(16);
+        desc.setLineSpacing(dp(4), 1.0f);
+        desc.setPadding(0, 0, 0, dp(24));
+        dialogLayout.addView(desc);
+
+        // Przycisk zamykający
+        Button btnClose = createButton("Zrozumiałem, zaczynamy", calmAccent, calmBackground);
+        btnClose.setTypeface(null, android.graphics.Typeface.BOLD);
+        dialogLayout.addView(btnClose);
+
+        builder.setView(dialogLayout);
+        AlertDialog dialog = builder.create();
+
+        // Przezroczyste tło systemowe, żeby było widać nasze zaokrąglone rogi
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+        }
+
+        // Zamknięcie okienka
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+    // --------------------------------------------------------------------
 
     private void createLayout() {
         ScrollView scrollView = new ScrollView(this);
         scrollView.setBackgroundColor(calmBackground);
+        scrollView.setFitsSystemWindows(true);
 
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
@@ -149,6 +211,7 @@ public class DynamicRelaxActivity extends AppCompatActivity {
         txtStepHint.setGravity(Gravity.CENTER);
         txtStepHint.setLineSpacing(dp(4), 1.0f);
         txtStepHint.setPadding(0, 0, 0, dp(16));
+        txtStepHint.setLines(4);
         main.addView(txtStepHint, fullWidthWrap());
 
         videoPreview = new VideoView(this);
@@ -210,8 +273,49 @@ public class DynamicRelaxActivity extends AppCompatActivity {
         btnFinish.setOnClickListener(v -> finish());
 
         LinearLayout.LayoutParams finishParams = buttonParams();
-        finishParams.setMargins(0, dp(16), 0, dp(12));
+        finishParams.setMargins(0, dp(16), 0, dp(24));
         main.addView(btnFinish, finishParams);
+
+        TextView txtTabsHeader = new TextView(this);
+        txtTabsHeader.setText("Plan treningu:");
+        txtTabsHeader.setTextColor(textPrimary);
+        txtTabsHeader.setTextSize(16);
+        txtTabsHeader.setPadding(0, 0, 0, dp(12));
+        main.addView(txtTabsHeader, fullWidthWrap());
+
+        LinearLayout tabsContainer = new LinearLayout(this);
+        tabsContainer.setOrientation(LinearLayout.HORIZONTAL);
+        tabsContainer.setWeightSum(3f);
+        main.addView(tabsContainer, fullWidthWrap());
+
+        LinearLayout col1 = new LinearLayout(this); col1.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout col2 = new LinearLayout(this); col2.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout col3 = new LinearLayout(this); col3.setOrientation(LinearLayout.VERTICAL);
+
+        LinearLayout.LayoutParams colParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        tabsContainer.addView(col1, colParams);
+        tabsContainer.addView(col2, colParams);
+        tabsContainer.addView(col3, colParams);
+
+        stepTabs = new TextView[steps.length];
+        for (int i = 0; i < steps.length; i++) {
+            TextView tv = new TextView(this);
+            tv.setText((i + 1) + ". " + steps[i].title);
+            tv.setTextSize(13);
+            tv.setPadding(0, dp(2), dp(4), dp(6));
+
+            tv.setLines(2);
+
+            stepTabs[i] = tv;
+
+            if (i < 2) {
+                col1.addView(tv);
+            } else if (i < 4) {
+                col2.addView(tv);
+            } else {
+                col3.addView(tv);
+            }
+        }
 
         setContentView(scrollView);
     }
@@ -241,21 +345,22 @@ public class DynamicRelaxActivity extends AppCompatActivity {
     }
 
     private void setStep(int idx) {
-        cancelTimer();
-
         currentStep = idx;
         Step s = steps[currentStep];
 
         txtStepTitle.setText(s.title);
         txtStepHint.setText(s.hint);
         txtStepCounter.setText("Ćwiczenie " + (currentStep + 1) + " z " + steps.length);
-        txtVideoHint.setText("Film uruchamia się automatycznie i działa w pętli.");
 
-        remainingMs = s.seconds * 1000L;
-        running = false;
-
-        btnStartPause.setText("Start");
-        updateTimerText(remainingMs);
+        for (int i = 0; i < stepTabs.length; i++) {
+            if (i == currentStep) {
+                stepTabs[i].setTextColor(calmAccent);
+                stepTabs[i].setTypeface(null, android.graphics.Typeface.BOLD);
+            } else {
+                stepTabs[i].setTextColor(textHint);
+                stepTabs[i].setTypeface(null, android.graphics.Typeface.NORMAL);
+            }
+        }
 
         btnPrev.setEnabled(currentStep > 0);
         btnNext.setEnabled(currentStep < steps.length - 1);
@@ -286,7 +391,7 @@ public class DynamicRelaxActivity extends AppCompatActivity {
 
     private void startTimer() {
         if (remainingMs <= 0) {
-            remainingMs = steps[currentStep].seconds * 1000L;
+            remainingMs = TOTAL_TIME_SECONDS * 1000L;
         }
 
         running = true;
@@ -304,28 +409,19 @@ public class DynamicRelaxActivity extends AppCompatActivity {
                 remainingMs = 0;
                 updateTimerText(0);
                 running = false;
-                btnStartPause.setText("Start");
-
-                if (currentStep < steps.length - 1) {
-                    setStep(currentStep + 1);
-                } else {
-                    txtStepHint.setText("Koniec zestawu. Zrób jeszcze kilka spokojnych oddechów i powoli wróć do normalnej aktywności.");
-                }
+                btnStartPause.setText("Koniec!");
+                txtStepHint.setText("Trening zakończony. Zrób jeszcze kilka spokojnych oddechów i powoli wróć do normalnej aktywności.");
             }
         }.start();
     }
 
     private void pauseTimer() {
-        cancelTimer();
-        running = false;
-        btnStartPause.setText("Start");
-    }
-
-    private void cancelTimer() {
         if (timer != null) {
             timer.cancel();
             timer = null;
         }
+        running = false;
+        btnStartPause.setText("Start");
     }
 
     private void updateTimerText(long ms) {
