@@ -64,6 +64,7 @@ public class RelaxGameActivity extends AppCompatActivity {
         txtProgress.setTextSize(16);
         txtProgress.setGravity(Gravity.CENTER);
         txtProgress.setPadding(0, dp(6), 0, dp(2));
+        txtProgress.setSingleLine(true); // NOWOŚĆ: Zawsze 1 linijka, nie przeskoczy
         main.addView(txtProgress, fullWidthWrap());
 
         txtStats = new TextView(this);
@@ -71,6 +72,7 @@ public class RelaxGameActivity extends AppCompatActivity {
         txtStats.setTextColor(textHint);
         txtStats.setTextSize(14);
         txtStats.setGravity(Gravity.CENTER);
+        txtStats.setSingleLine(true); // NOWOŚĆ: Zawsze 1 linijka
         main.addView(txtStats, fullWidthWrap());
 
         txtHint = new TextView(this);
@@ -79,6 +81,7 @@ public class RelaxGameActivity extends AppCompatActivity {
         txtHint.setTextSize(13);
         txtHint.setGravity(Gravity.CENTER);
         txtHint.setPadding(0, dp(8), 0, dp(12));
+        txtHint.setLines(2); // NOWOŚĆ: Rezerwuje na sztywno miejsce na 2 linijki!
         main.addView(txtHint, fullWidthWrap());
 
         treeGardenView = new TreeGardenView(this);
