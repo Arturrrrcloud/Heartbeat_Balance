@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.Shader;
 import android.graphics.Typeface;
@@ -26,7 +25,6 @@ import java.util.Random;
 public class RelaxGameActivity extends AppCompatActivity {
 
     private TextView txtTitle;
-    private TextView txtProgress;
     private TextView txtStats;
     private TextView txtHint;
     private TreeGardenView treeGardenView;
@@ -50,530 +48,696 @@ public class RelaxGameActivity extends AppCompatActivity {
         main.setPadding(dp(18), dp(18), dp(18), dp(18));
         main.setBackgroundColor(calmBackground);
 
+        // NOWOŚĆ: Dopasowanie do pasków systemowych telefonu (przeciwdziała obcinaniu trawy)
+        main.setFitsSystemWindows(true);
+
+        // --- PASEK GÓRNY (Nawigacja i Tytuł) ---
+        LinearLayout topBar = new LinearLayout(this);
+        topBar.setOrientation(LinearLayout.HORIZONTAL);
+        topBar.setGravity(Gravity.CENTER_VERTICAL);
+        topBar.setLayoutParams(fullWidthWrap());
+
+        Button btnBack = new Button(this);
+        btnBack.setText("←");
+        btnBack.setTextColor(calmAccent);
+        btnBack.setBackgroundColor(Color.TRANSPARENT);
+        btnBack.setTextSize(26);
+        btnBack.setTypeface(null, Typeface.BOLD);
+        btnBack.setPadding(0, 0, dp(10), 0);
+        btnBack.setOnClickListener(v -> finish());
+        topBar.addView(btnBack);
+
         txtTitle = new TextView(this);
-        txtTitle.setText("Sadzenie drzewa");
+        txtTitle.setText("Ogród Zen");
         txtTitle.setTextColor(calmAccent);
-        txtTitle.setTextSize(28);
+        txtTitle.setTextSize(24);
         txtTitle.setTypeface(null, Typeface.BOLD);
         txtTitle.setGravity(Gravity.CENTER);
-        main.addView(txtTitle, fullWidthWrap());
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        topBar.addView(txtTitle, titleParams);
 
-        txtProgress = new TextView(this);
-        txtProgress.setText("Wzrost: 0%");
-        txtProgress.setTextColor(textPrimary);
-        txtProgress.setTextSize(16);
-        txtProgress.setGravity(Gravity.CENTER);
-        txtProgress.setPadding(0, dp(6), 0, dp(2));
-        txtProgress.setSingleLine(true); // NOWOŚĆ: Zawsze 1 linijka, nie przeskoczy
-        main.addView(txtProgress, fullWidthWrap());
+        Button btnReset = new Button(this);
+        btnReset.setText("⟳");
+        btnReset.setTextColor(calmAccent);
+        btnReset.setBackgroundColor(Color.TRANSPARENT);
+        btnReset.setTextSize(26);
+        btnReset.setTypeface(null, Typeface.BOLD);
+        btnReset.setPadding(dp(10), 0, 0, 0);
+        btnReset.setOnClickListener(v -> treeGardenView.resetGame());
+        topBar.addView(btnReset);
+
+        main.addView(topBar);
+        // --------------------------------------------
 
         txtStats = new TextView(this);
-        txtStats.setText("Woda: 0   Słońce: 0   Opieka: 0");
-        txtStats.setTextColor(textHint);
-        txtStats.setTextSize(14);
+        txtStats.setText("Zasoby: 0 / 2");
+        txtStats.setTextColor(textPrimary);
+        txtStats.setTextSize(16);
         txtStats.setGravity(Gravity.CENTER);
-        txtStats.setSingleLine(true); // NOWOŚĆ: Zawsze 1 linijka
+        txtStats.setPadding(0, dp(12), 0, dp(4));
         main.addView(txtStats, fullWidthWrap());
 
         txtHint = new TextView(this);
-        txtHint.setText("Zbieraj wodę, słońce i liście. Omijaj chwasty.");
+        txtHint.setText("Przeciągnij wodę i słońce do nasiona, aby wykiełkowało.");
         txtHint.setTextColor(textHint);
-        txtHint.setTextSize(13);
+        txtHint.setTextSize(14);
         txtHint.setGravity(Gravity.CENTER);
-        txtHint.setPadding(0, dp(8), 0, dp(12));
-        txtHint.setLines(2); // NOWOŚĆ: Rezerwuje na sztywno miejsce na 2 linijki!
+        txtHint.setPadding(0, 0, 0, dp(12));
+        txtHint.setLines(2);
         main.addView(txtHint, fullWidthWrap());
 
         treeGardenView = new TreeGardenView(this);
-        treeGardenView.setTreeListener((growth, water, sun, care, hint) -> {
-            txtProgress.setText("Wzrost: " + growth + "%");
-            txtStats.setText("Woda: " + water + "   Słońce: " + sun + "   Opieka: " + care);
+        treeGardenView.setGameListener((resources, hint) -> {
+            if (treeGardenView.currentPhase == TreeGardenView.PHASE_SEED) {
+                txtStats.setText("Zasoby: " + resources + " / 2");
+            } else {
+                txtStats.setText("Zasoby: " + resources);
+            }
             txtHint.setText(hint);
         });
 
         LinearLayout.LayoutParams gameParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1
         );
-        gameParams.setMargins(0, dp(8), 0, dp(14));
+        gameParams.setMargins(0, dp(8), 0, dp(4));
         main.addView(treeGardenView, gameParams);
-
-        Button btnReset = createButton("Zasadź od nowa", calmAccent, calmBackground);
-        btnReset.setTypeface(null, Typeface.BOLD);
-        btnReset.setOnClickListener(v -> treeGardenView.resetGame());
-        main.addView(btnReset, buttonParams());
-
-        Button btnBack = createButton("Wróć", calmBackground, textHint);
-        btnBack.setOnClickListener(v -> finish());
-        main.addView(btnBack, buttonParams());
 
         setContentView(main);
     }
 
-    private Button createButton(String text, int backgroundColor, int textColor) {
-        Button button = new Button(this);
-        button.setText(text);
-        button.setTextColor(textColor);
-        button.setBackgroundColor(backgroundColor);
-        return button;
-    }
-
     private LinearLayout.LayoutParams fullWidthWrap() {
-        return new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-    }
-
-    private LinearLayout.LayoutParams buttonParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        params.setMargins(0, 0, 0, dp(10));
-        return params;
+        return new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
     }
 
     private int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
+    // =================================================================
+    // GŁÓWNY WIDOK GRY
+    // =================================================================
     public static class TreeGardenView extends View {
 
-        interface TreeListener {
-            void onTreeChanged(int growth, int water, int sun, int care, String hint);
+        interface GameListener {
+            void onStateChanged(int resources, String hint);
         }
 
-        private static class GardenItem {
-            float x;
-            float y;
-            float vx;
-            float vy;
+        public static final int PHASE_SEED = 0;
+        public static final int PHASE_TRUNK = 1;
+
+        private static class DraggableOrb {
+            float x, y;
+            float vx, vy;
+            float targetVx, targetVy;
             float radius;
+            float slowDownY;
             int type;
-            String symbol;
-            int color;
+            boolean isDragged;
+            int fruitSubType;
 
-            GardenItem(float x, float y, float vx, float vy, float radius, int type, String symbol, int color) {
-                this.x = x;
-                this.y = y;
-                this.vx = vx;
-                this.vy = vy;
-                this.radius = radius;
-                this.type = type;
-                this.symbol = symbol;
-                this.color = color;
+            DraggableOrb(float x, float y, int type) {
+                this.x = x; this.y = y; this.type = type;
+                this.radius = 50;
+                this.isDragged = false;
+
+                Random rnd = new Random();
+                this.targetVx = (rnd.nextFloat() * 1.0f - 0.5f);
+                this.targetVy = (rnd.nextFloat() * 0.4f + 0.3f);
+
+                this.vx = 0f;
+                this.vy = 2.5f + rnd.nextFloat() * 2.0f;
+
+                this.slowDownY = 50f + rnd.nextFloat() * 300f;
+
+                if (type == 4) {
+                    this.fruitSubType = rnd.nextInt(3);
+                } else {
+                    this.fruitSubType = -1;
+                }
             }
         }
 
-        private static class FloatingText {
-            float x;
-            float y;
-            String text;
-            int alpha;
+        private static class TreeNode {
+            float startX, startY, endX, endY, thickness;
+            float angle;
+            float length;
 
-            FloatingText(float x, float y, String text) {
-                this.x = x;
-                this.y = y;
-                this.text = text;
-                this.alpha = 230;
+            TreeNode parent;
+            TreeNode[] slots = new TreeNode[3];
+
+            float relAngle;
+            float attachT;
+            float relLengthMulti = 0.65f;
+            float relThickMulti = 0.70f;
+
+            TreeNode() {}
+
+            TreeNode(TreeNode parent, int slotIndex) {
+                this.parent = parent;
+
+                if (slotIndex == 0)      { attachT = 1.0f; relAngle = 0f; }
+                else if (slotIndex == 1) { attachT = 0.7f; relAngle = (float)Math.toRadians(-60); }
+                else if (slotIndex == 2) { attachT = 0.7f; relAngle = (float)Math.toRadians(60); }
+            }
+
+            void updateAbsolute() {
+                if (parent != null) {
+                    startX = parent.startX + (parent.endX - parent.startX) * attachT;
+                    startY = parent.startY + (parent.endY - parent.startY) * attachT;
+                    angle = parent.angle + relAngle;
+                    length = parent.length * relLengthMulti;
+                    thickness = parent.thickness * relThickMulti;
+
+                    endX = startX + (float)Math.cos(angle) * length;
+                    endY = startY + (float)Math.sin(angle) * length;
+                }
+                for (int i=0; i<3; i++) {
+                    if (slots[i] != null) slots[i].updateAbsolute();
+                }
+            }
+
+            float getSlotStartX(int slotIndex) {
+                float t = (slotIndex == 0) ? 1.0f : 0.7f;
+                return startX + (endX - startX) * t;
+            }
+            float getSlotStartY(int slotIndex) {
+                float t = (slotIndex == 0) ? 1.0f : 0.7f;
+                return startY + (endY - startY) * t;
             }
         }
+
+        private static class Fruit {
+            float factorX, factorY;
+            int subType;
+
+            Fruit(float fx, float fy, int subType) {
+                this.factorX = fx;
+                this.factorY = fy;
+                this.subType = subType;
+            }
+        }
+
+        private static class Leaf {
+            TreeNode node;
+            float t;
+            float offsetX, offsetY;
+            List<Fruit> fruits = new ArrayList<>();
+
+            Leaf(TreeNode node, float t, float offsetX, float offsetY) {
+                this.node = node;
+                this.t = t;
+                this.offsetX = offsetX;
+                this.offsetY = offsetY;
+            }
+        }
+
+        private TreeNode trunkNode;
+        private final List<TreeNode> allNodes = new ArrayList<>();
+        private float trunkHeight = 60f;
+        private float trunkWidth = 24f;
+
+        private final List<Leaf> leaves = new ArrayList<>();
+        private final List<DraggableOrb> orbs = new ArrayList<>();
+        private DraggableOrb currentlyDraggedOrb = null;
 
         private final Random random = new Random();
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        private final List<GardenItem> items = new ArrayList<>();
-        private final List<FloatingText> floatingTexts = new ArrayList<>();
+        private GameListener listener;
+        public int currentPhase = PHASE_SEED;
+        private int collectedResources = 0;
 
-        private TreeListener listener;
+        private float rootX = 0;
+        private float rootY = 0;
+        private final float rootRadius = 60;
 
-        private int growth = 0;
-        private int water = 0;
-        private int sun = 0;
-        private int care = 0;
-
-        private final int backgroundTop = Color.parseColor("#143B48");
-        private final int backgroundBottom = Color.parseColor("#081E26");
-        private final int grassColor = Color.parseColor("#2E7D32");
-        private final int trunkColor = Color.parseColor("#8D5A2B");
-        private final int leafColor = Color.parseColor("#66BB6A");
-        private final int leafDarkColor = Color.parseColor("#2E7D32");
-        private final int waterColor = Color.parseColor("#4FC3F7");
-        private final int sunColor = Color.parseColor("#FFD54F");
-        private final int careColor = Color.parseColor("#81C784");
-        private final int weedColor = Color.parseColor("#B0BEC5");
+        private final int colorWater = Color.parseColor("#4FC3F7");
+        private final int colorSun = Color.parseColor("#FFD54F");
+        private final int colorSeed = Color.parseColor("#A1887F");
+        private final int colorTrunk = Color.parseColor("#8D5A2B");
+        private final int colorLeaf = Color.parseColor("#66BB6A");
+        private final int colorFruitRed = Color.parseColor("#E53935");
+        private final int colorFruitOrange = Color.parseColor("#FB8C00");
+        private final int colorFruitPurple = Color.parseColor("#8E24AA");
 
         public TreeGardenView(Context context) {
             super(context);
             textPaint.setTextAlign(Paint.Align.CENTER);
             textPaint.setTypeface(Typeface.DEFAULT_BOLD);
+        }
+
+        public void setGameListener(GameListener listener) {
+            this.listener = listener;
             resetGame();
         }
 
-        public void setTreeListener(TreeListener listener) {
-            this.listener = listener;
-            notifyChange("Zbieraj wodę, słońce i liście, aby drzewo rosło.");
-        }
-
         public void resetGame() {
-            growth = 0;
-            water = 0;
-            sun = 0;
-            care = 0;
-            items.clear();
-            floatingTexts.clear();
-
-            if (getWidth() > 0 && getHeight() > 0) {
-                createStartItems();
-            }
-
-            notifyChange("Zasadzone nasiono. Zbieraj elementy, żeby wyrosło drzewo.");
+            currentPhase = PHASE_SEED;
+            collectedResources = 0;
+            trunkHeight = 60f;
+            trunkWidth = 24f;
+            allNodes.clear();
+            trunkNode = null;
+            leaves.clear();
+            orbs.clear();
+            currentlyDraggedOrb = null;
+            notifyChange("Przeciągnij wodę lub słońce na nasiono.");
             invalidate();
         }
 
         @Override
         protected void onSizeChanged(int w, int h, int oldw, int oldh) {
             super.onSizeChanged(w, h, oldw, oldh);
-
-            if (items.isEmpty()) {
-                createStartItems();
-            }
-        }
-
-        private void createStartItems() {
-            items.clear();
-
-            for (int i = 0; i < 10; i++) {
-                addRandomItem();
-            }
-        }
-
-        private void addRandomItem() {
-            int width = Math.max(getWidth(), 1);
-            int height = Math.max(getHeight(), 1);
-
-            int chance = random.nextInt(100);
-            int type;
-
-            if (chance < 32) {
-                type = 0; // woda
-            } else if (chance < 62) {
-                type = 1; // słońce
-            } else if (chance < 88) {
-                type = 2; // liść/opieka
-            } else {
-                type = 3; // chwast
-            }
-
-            String symbol;
-            int color;
-            float radius;
-
-            if (type == 0) {
-                symbol = "💧";
-                color = waterColor;
-                radius = 38;
-            } else if (type == 1) {
-                symbol = "☀";
-                color = sunColor;
-                radius = 40;
-            } else if (type == 2) {
-                symbol = "🍃";
-                color = careColor;
-                radius = 38;
-            } else {
-                symbol = "!";
-                color = weedColor;
-                radius = 36;
-            }
-
-            float x = radius + random.nextInt(Math.max(1, width - (int) (radius * 2)));
-            float y = radius + random.nextInt(Math.max(1, height - (int) (radius * 2) - 80));
-
-            float vx = randomSpeed();
-            float vy = randomSpeed();
-
-            items.add(new GardenItem(x, y, vx, vy, radius, type, symbol, color));
-        }
-
-        private float randomSpeed() {
-            float speed = 0.35f + random.nextFloat() * 0.65f;
-            return random.nextBoolean() ? speed : -speed;
+            rootX = w / 2f;
+            rootY = h - 100f;
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
 
-            drawBackground(canvas);
-            updateItems();
-            drawTree(canvas);
-            drawItems(canvas);
-            drawFloatingTexts(canvas);
+            if (trunkNode != null) {
+                trunkNode.startX = rootX;
+                trunkNode.startY = rootY;
+                trunkNode.angle = (float)Math.toRadians(-90);
+                trunkNode.length = trunkHeight;
+                trunkNode.thickness = trunkWidth;
+                trunkNode.endX = trunkNode.startX + (float)Math.cos(trunkNode.angle) * trunkNode.length;
+                trunkNode.endY = trunkNode.startY + (float)Math.sin(trunkNode.angle) * trunkNode.length;
+                trunkNode.updateAbsolute();
+            }
 
+            drawBackground(canvas);
+            updatePhysics();
+            drawTreeBase(canvas);
+            drawLeavesAndFruits(canvas);
+            drawOrbs(canvas);
             postInvalidateOnAnimation();
         }
 
         private void drawBackground(Canvas canvas) {
-            LinearGradient gradient = new LinearGradient(
-                    0,
-                    0,
-                    0,
-                    getHeight(),
-                    backgroundTop,
-                    backgroundBottom,
-                    Shader.TileMode.CLAMP
-            );
-
+            LinearGradient gradient = new LinearGradient(0, 0, 0, getHeight(),
+                    Color.parseColor("#A2C2E0"), // Góra: Poranny błękit
+                    Color.parseColor("#D8C9B9"), // Dół: Ciepły beż
+                    Shader.TileMode.CLAMP);
             paint.setShader(gradient);
             canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
             paint.setShader(null);
 
-            paint.setColor(Color.argb(55, 46, 125, 50));
-            canvas.drawOval(-80, getHeight() - 120, getWidth() + 80, getHeight() + 80, paint);
+            paint.setColor(Color.parseColor("#2E7D32"));
+            canvas.drawRect(0, rootY + 20, getWidth(), getHeight(), paint);
 
-            paint.setColor(grassColor);
-            canvas.drawRect(0, getHeight() - 65, getWidth(), getHeight(), paint);
-
-            paint.setColor(Color.argb(70, 100, 255, 218));
-            canvas.drawCircle(getWidth() - 60, 70, 45, paint);
+            paint.setColor(Color.parseColor("#1B5E20"));
+            canvas.drawOval(rootX - 50, rootY + 10, rootX + 50, rootY + 30, paint);
         }
 
-        private void updateItems() {
-            int w = getWidth();
-            int h = getHeight();
+        private void drawTreeBase(Canvas canvas) {
+            if (currentPhase == PHASE_SEED) {
+                paint.setColor(colorSeed);
+                canvas.drawOval(rootX - 25, rootY - 15, rootX + 25, rootY + 15, paint);
 
-            while (items.size() < 10) {
-                addRandomItem();
-            }
+                paint.setColor(Color.argb(40, 255, 255, 255));
+                float pulse = 10f * (float) Math.sin(System.currentTimeMillis() / 300.0);
+                canvas.drawOval(rootX - 30 - pulse, rootY - 20 - pulse, rootX + 30 + pulse, rootY + 20 + pulse, paint);
 
-            for (GardenItem item : items) {
-                item.x += item.vx;
-                item.y += item.vy;
-
-                if (item.x < item.radius || item.x > w - item.radius) {
-                    item.vx *= -1;
-                }
-
-                if (item.y < item.radius || item.y > h - item.radius - 70) {
-                    item.vy *= -1;
-                }
-            }
-
-            for (int i = floatingTexts.size() - 1; i >= 0; i--) {
-                FloatingText ft = floatingTexts.get(i);
-                ft.y -= 1.5f;
-                ft.alpha -= 5;
-
-                if (ft.alpha <= 0) {
-                    floatingTexts.remove(i);
+            } else if (currentPhase == PHASE_TRUNK) {
+                paint.setColor(colorTrunk);
+                paint.setStrokeCap(Paint.Cap.ROUND);
+                for (TreeNode n : allNodes) {
+                    paint.setStrokeWidth(n.thickness);
+                    canvas.drawLine(n.startX, n.startY, n.endX, n.endY, paint);
                 }
             }
         }
 
-        private void drawTree(Canvas canvas) {
-            float cx = getWidth() / 2f;
-            float groundY = getHeight() - 65;
-
+        private void drawLeavesAndFruits(Canvas canvas) {
             paint.setStyle(Paint.Style.FILL);
 
-            if (growth < 15) {
-                drawSeed(canvas, cx, groundY);
-            } else if (growth < 35) {
-                drawSprout(canvas, cx, groundY);
-            } else if (growth < 70) {
-                drawSmallTree(canvas, cx, groundY);
-            } else {
-                drawBigTree(canvas, cx, groundY);
-            }
+            for (Leaf leaf : leaves) {
+                float lx = leaf.node.startX + (leaf.node.endX - leaf.node.startX) * leaf.t + leaf.offsetX;
+                float ly = leaf.node.startY + (leaf.node.endY - leaf.node.startY) * leaf.t + leaf.offsetY;
 
-            paint.setStyle(Paint.Style.FILL);
-        }
+                float currentRadius = 40f;
 
-        private void drawSeed(Canvas canvas, float cx, float groundY) {
-            paint.setColor(Color.parseColor("#A1887F"));
-            canvas.drawOval(cx - 18, groundY - 18, cx + 18, groundY + 8, paint);
+                paint.setColor(colorLeaf);
+                canvas.drawCircle(lx, ly, currentRadius, paint);
 
-            textPaint.setTextSize(20);
-            textPaint.setColor(Color.WHITE);
-            canvas.drawText("nasiono", cx, groundY + 35, textPaint);
-        }
+                if (!leaf.fruits.isEmpty()) {
+                    for (Fruit f : leaf.fruits) {
+                        float fx = lx + (f.factorX * currentRadius);
+                        float fy = ly + (f.factorY * currentRadius);
 
-        private void drawSprout(Canvas canvas, float cx, float groundY) {
-            paint.setStrokeWidth(8);
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setColor(leafDarkColor);
-            canvas.drawLine(cx, groundY, cx, groundY - 70, paint);
+                        if (f.subType == 0) paint.setColor(colorFruitRed);
+                        else if (f.subType == 1) paint.setColor(colorFruitOrange);
+                        else paint.setColor(colorFruitPurple);
 
-            paint.setStyle(Paint.Style.FILL);
-            paint.setColor(leafColor);
-            canvas.drawOval(cx - 55, groundY - 80, cx + 5, groundY - 35, paint);
-            canvas.drawOval(cx - 5, groundY - 82, cx + 55, groundY - 37, paint);
-        }
-
-        private void drawSmallTree(Canvas canvas, float cx, float groundY) {
-            paint.setColor(trunkColor);
-            canvas.drawRect(cx - 14, groundY - 120, cx + 14, groundY, paint);
-
-            paint.setColor(leafDarkColor);
-            canvas.drawCircle(cx, groundY - 150, 65, paint);
-
-            paint.setColor(leafColor);
-            canvas.drawCircle(cx - 35, groundY - 140, 48, paint);
-            canvas.drawCircle(cx + 35, groundY - 140, 48, paint);
-            canvas.drawCircle(cx, groundY - 190, 52, paint);
-        }
-
-        private void drawBigTree(Canvas canvas, float cx, float groundY) {
-            paint.setColor(trunkColor);
-            canvas.drawRect(cx - 20, groundY - 160, cx + 20, groundY, paint);
-
-            paint.setStrokeWidth(12);
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setColor(trunkColor);
-            canvas.drawLine(cx, groundY - 110, cx - 60, groundY - 190, paint);
-            canvas.drawLine(cx, groundY - 105, cx + 65, groundY - 185, paint);
-
-            paint.setStyle(Paint.Style.FILL);
-
-            RadialGradient glow = new RadialGradient(
-                    cx,
-                    groundY - 205,
-                    150,
-                    Color.argb(100, 129, 199, 132),
-                    Color.argb(0, 129, 199, 132),
-                    Shader.TileMode.CLAMP
-            );
-            paint.setShader(glow);
-            canvas.drawCircle(cx, groundY - 205, 150, paint);
-            paint.setShader(null);
-
-            paint.setColor(leafDarkColor);
-            canvas.drawCircle(cx, groundY - 215, 95, paint);
-
-            paint.setColor(leafColor);
-            canvas.drawCircle(cx - 70, groundY - 190, 70, paint);
-            canvas.drawCircle(cx + 70, groundY - 190, 70, paint);
-            canvas.drawCircle(cx, groundY - 265, 75, paint);
-            canvas.drawCircle(cx, groundY - 175, 70, paint);
-
-            if (growth >= 90) {
-                paint.setColor(Color.parseColor("#FF80AB"));
-                canvas.drawCircle(cx - 55, groundY - 230, 8, paint);
-                canvas.drawCircle(cx + 45, groundY - 255, 8, paint);
-                canvas.drawCircle(cx + 70, groundY - 175, 8, paint);
-                canvas.drawCircle(cx - 20, groundY - 285, 8, paint);
+                        float fruitRadius = 10f;
+                        canvas.drawCircle(fx, fy, fruitRadius, paint);
+                    }
+                }
             }
         }
 
-        private void drawItems(Canvas canvas) {
-            for (GardenItem item : items) {
-                RadialGradient glow = new RadialGradient(
-                        item.x,
-                        item.y,
-                        item.radius * 1.7f,
-                        Color.argb(90, Color.red(item.color), Color.green(item.color), Color.blue(item.color)),
-                        Color.argb(0, Color.red(item.color), Color.green(item.color), Color.blue(item.color)),
-                        Shader.TileMode.CLAMP
-                );
+        private void drawOrbs(Canvas canvas) {
+            for (DraggableOrb orb : orbs) {
+                int color;
+                String symbol;
 
+                if (orb.type == 0) { color = colorWater; symbol = "💧"; }
+                else if (orb.type == 1) { color = colorSun; symbol = "☀"; }
+                else if (orb.type == 2) { color = colorTrunk; symbol = "Y"; }
+                else if (orb.type == 3) { color = colorLeaf; symbol = "🍃"; }
+                else {
+                    if (orb.fruitSubType == 0) { color = colorFruitRed; symbol = "🍎"; }
+                    else if (orb.fruitSubType == 1) { color = colorFruitOrange; symbol = "🍊"; }
+                    else { color = colorFruitPurple; symbol = "🍇"; }
+                }
+
+                RadialGradient glow = new RadialGradient(orb.x, orb.y, orb.radius * 1.5f,
+                        Color.argb(100, Color.red(color), Color.green(color), Color.blue(color)),
+                        Color.TRANSPARENT, Shader.TileMode.CLAMP);
                 paint.setShader(glow);
-                canvas.drawCircle(item.x, item.y, item.radius * 1.7f, paint);
+                canvas.drawCircle(orb.x, orb.y, orb.radius * 1.5f, paint);
                 paint.setShader(null);
 
-                paint.setColor(Color.argb(80, 255, 255, 255));
-                canvas.drawCircle(item.x, item.y, item.radius, paint);
+                paint.setColor(color);
+                if (orb.isDragged) paint.setAlpha(180);
+                canvas.drawCircle(orb.x, orb.y, orb.radius, paint);
+                paint.setAlpha(255);
 
-                paint.setColor(Color.argb(150, Color.red(item.color), Color.green(item.color), Color.blue(item.color)));
-                canvas.drawCircle(item.x, item.y, item.radius * 0.78f, paint);
-
-                textPaint.setTextSize(item.type == 3 ? 30 : 34);
+                textPaint.setTextSize(40);
                 textPaint.setColor(Color.WHITE);
-
                 Paint.FontMetrics fm = textPaint.getFontMetrics();
-                float textY = item.y - (fm.ascent + fm.descent) / 2;
-                canvas.drawText(item.symbol, item.x, textY, textPaint);
+                canvas.drawText(symbol, orb.x, orb.y - (fm.ascent + fm.descent) / 2, textPaint);
             }
         }
 
-        private void drawFloatingTexts(Canvas canvas) {
-            for (FloatingText ft : floatingTexts) {
-                textPaint.setTextSize(24);
-                textPaint.setColor(Color.argb(ft.alpha, 255, 255, 255));
-                canvas.drawText(ft.text, ft.x, ft.y, textPaint);
+        private void updatePhysics() {
+            if (orbs.size() < 7) {
+                if (random.nextInt(100) < 5) {
+                    int type;
+                    if (currentPhase == PHASE_SEED) {
+                        type = random.nextBoolean() ? 0 : 1;
+                    } else {
+                        int r = random.nextInt(100);
+                        if (r < 17) type = 0;
+                        else if (r < 34) type = 1;
+                        else if (r < 70) type = 2;
+                        else if (r < 91) type = 3;
+                        else type = 4;
+                    }
+                    float startX = 60 + random.nextInt(getWidth() - 120);
+                    orbs.add(new DraggableOrb(startX, -150, type));
+                }
+            }
+
+            for (int i = orbs.size() - 1; i >= 0; i--) {
+                DraggableOrb orb = orbs.get(i);
+                if (!orb.isDragged) {
+
+                    if (orb.y > orb.slowDownY) {
+                        orb.vx += (orb.targetVx - orb.vx) * 0.015f;
+                        orb.vy += (orb.targetVy - orb.vy) * 0.015f;
+                    }
+
+                    orb.x += orb.vx;
+                    orb.y += orb.vy;
+
+                    if (orb.y > getHeight() + orb.radius) {
+                        orbs.remove(i);
+                        continue;
+                    }
+
+                    if (orb.x < orb.radius) {
+                        orb.x = orb.radius;
+                        orb.vx = 0.5f + random.nextFloat() * 1.5f;
+                        orb.vy = (random.nextFloat() * 2f - 1f);
+                    } else if (orb.x > getWidth() - orb.radius) {
+                        orb.x = getWidth() - orb.radius;
+                        orb.vx = -0.5f - random.nextFloat() * 1.5f;
+                        orb.vy = (random.nextFloat() * 2f - 1f);
+                    }
+                }
             }
         }
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
-            if (event.getAction() != MotionEvent.ACTION_DOWN) {
-                return true;
+            float tx = event.getX();
+            float ty = event.getY();
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    for (int i = orbs.size() - 1; i >= 0; i--) {
+                        DraggableOrb orb = orbs.get(i);
+                        float dx = tx - orb.x;
+                        float dy = ty - orb.y;
+                        if (dx * dx + dy * dy <= orb.radius * orb.radius * 1.5f) {
+                            currentlyDraggedOrb = orb;
+                            orb.isDragged = true;
+                            orbs.remove(i);
+                            orbs.add(orb);
+                            return true;
+                        }
+                    }
+                    break;
+
+                case MotionEvent.ACTION_MOVE:
+                    if (currentlyDraggedOrb != null) {
+                        currentlyDraggedOrb.x = tx;
+                        currentlyDraggedOrb.y = ty;
+                        return true;
+                    }
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    if (currentlyDraggedOrb != null) {
+                        boolean orbAbsorbed = false;
+
+                        if (currentlyDraggedOrb.type == 0 || currentlyDraggedOrb.type == 1) {
+                            if (isNearTree(currentlyDraggedOrb.x, currentlyDraggedOrb.y)) {
+                                orbAbsorbed = true;
+                                collectedResources++;
+
+                                if (currentPhase == PHASE_SEED) {
+                                    if (collectedResources >= 2) {
+                                        currentPhase = PHASE_TRUNK;
+                                        trunkNode = new TreeNode();
+                                        allNodes.add(trunkNode);
+                                        notifyChange("Drzewo rośnie! Układaj gałęzie i doczepiaj do nich liście.");
+                                    } else {
+                                        notifyChange("Nasiono wchłania zasoby. Zbieraj dalej.");
+                                    }
+                                } else {
+                                    handleGrowth();
+                                    notifyChange("Cała roślina naturalnie się powiększa.");
+                                }
+                            }
+                        } else if (currentlyDraggedOrb.type == 2) {
+                            if (isNearTree(currentlyDraggedOrb.x, currentlyDraggedOrb.y)) {
+                                boolean attached = addFractalBranch(currentlyDraggedOrb.x, currentlyDraggedOrb.y);
+                                if (attached) {
+                                    orbAbsorbed = true;
+                                    notifyChange("Nowa gałąź znalazła swoje miejsce.");
+                                } else {
+                                    notifyChange("Brak wolnych miejsc w tej okolicy drzewa.");
+                                }
+                            }
+                        } else if (currentlyDraggedOrb.type == 3) {
+                            if (currentPhase == PHASE_TRUNK && isNearTree(currentlyDraggedOrb.x, currentlyDraggedOrb.y)) {
+                                boolean attached = addLeafAt(currentlyDraggedOrb.x, currentlyDraggedOrb.y);
+                                if (attached) {
+                                    orbAbsorbed = true;
+                                    notifyChange("Liście ubarwiły drzewo.");
+                                } else {
+                                    notifyChange("Nie możesz sadzić liści tak nisko na głównym pniu.");
+                                }
+                            } else if (allNodes.size() == 0 && currentPhase == PHASE_SEED) {
+                                notifyChange("Najpierw musisz poczekać na wykiełkowanie!");
+                            }
+                        } else if (currentlyDraggedOrb.type == 4) {
+                            if (leaves.size() > 0) {
+                                boolean added = addFruitAt(currentlyDraggedOrb.x, currentlyDraggedOrb.y);
+                                if (added) {
+                                    orbAbsorbed = true;
+                                    notifyChange("Owoc dojrzał na liściu.");
+                                } else {
+                                    notifyChange("Upuść owoc bezpośrednio na zielony liść (max 6 na liść).");
+                                }
+                            } else {
+                                notifyChange("Najpierw musisz posadzić liście!");
+                            }
+                        }
+
+                        if (orbAbsorbed) {
+                            orbs.remove(currentlyDraggedOrb);
+                        }
+
+                        currentlyDraggedOrb.isDragged = false;
+                        currentlyDraggedOrb = null;
+                        return true;
+                    }
+                    break;
             }
-
-            float touchX = event.getX();
-            float touchY = event.getY();
-
-            for (int i = items.size() - 1; i >= 0; i--) {
-                GardenItem item = items.get(i);
-
-                float dx = touchX - item.x;
-                float dy = touchY - item.y;
-                float distance = (float) Math.sqrt(dx * dx + dy * dy);
-
-                if (distance <= item.radius + 16) {
-                    handleItemTouch(i, item);
-                    return true;
-                }
-            }
-
-            care = clamp(care + 1);
-            growth = clamp(growth + 1);
-            floatingTexts.add(new FloatingText(touchX, touchY, "+ opieka"));
-            notifyChange("Dotknąłeś ziemi i zadbałeś o roślinę. Zbieraj też wodę i słońce.");
             return true;
         }
 
-        private void handleItemTouch(int index, GardenItem item) {
-            if (item.type == 0) {
-                water = clamp(water + 12);
-                growth = clamp(growth + 5);
-                floatingTexts.add(new FloatingText(item.x, item.y, "+ woda"));
-                notifyChange("Drzewo zostało podlane. Zbieraj dalej, żeby szybciej rosło.");
-            } else if (item.type == 1) {
-                sun = clamp(sun + 12);
-                growth = clamp(growth + 5);
-                floatingTexts.add(new FloatingText(item.x, item.y, "+ słońce"));
-                notifyChange("Drzewo dostało światło. To pomaga mu rosnąć.");
-            } else if (item.type == 2) {
-                care = clamp(care + 12);
-                growth = clamp(growth + 6);
-                floatingTexts.add(new FloatingText(item.x, item.y, "+ opieka"));
-                notifyChange("Dobra opieka. Drzewo robi się coraz większe.");
-            } else {
-                growth = Math.max(0, growth - 6);
-                care = Math.max(0, care - 5);
-                floatingTexts.add(new FloatingText(item.x, item.y, "- chwast"));
-                notifyChange("To był chwast. Usuń go spokojnie i wróć do podlewania drzewa.");
+        private void handleGrowth() {
+            float margin = 200f;
+            float growthMulti = 1.0f;
+
+            for (TreeNode n : allNodes) {
+                float distTop = n.endY - margin;
+                float distLeft = n.endX - 100f;
+                float distRight = getWidth() - 100f - n.endX;
+
+                float minD = Math.min(distTop, Math.min(distLeft, distRight));
+                if (minD < margin) {
+                    float m = Math.max(0f, minD / margin);
+                    if (m < growthMulti) growthMulti = m;
+                }
             }
 
-            items.remove(index);
-            addRandomItem();
-
-            if (growth >= 100) {
-                notifyChange("Drzewo w pełni urosło. Udało się stworzyć spokojny ogród.");
-            }
+            // ZMIANA: Przyspieszony wzrost po zjedzeniu zasobu
+            trunkHeight += 20f * growthMulti;
+            trunkWidth += 2.5f * growthMulti;
         }
 
-        private int clamp(int value) {
-            return Math.max(0, Math.min(100, value));
+        private boolean isNearTree(float tx, float ty) {
+            float dx = tx - rootX;
+            float dy = ty - rootY;
+            if (dx * dx + dy * dy <= rootRadius * rootRadius * 2) return true;
+
+            if (currentPhase == PHASE_TRUNK) {
+                for (TreeNode n : allNodes) {
+                    float bdx = tx - n.endX;
+                    float bdy = ty - n.endY;
+                    if (bdx * bdx + bdy * bdy <= 16000) return true;
+
+                    float sx = tx - n.startX;
+                    float sy = ty - n.startY;
+                    if (sx * sx + sy * sy <= 16000) return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean addFractalBranch(float dropX, float dropY) {
+            float minDist = Float.MAX_VALUE;
+            TreeNode bestNode = null;
+            int bestSlot = -1;
+
+            for (TreeNode node : allNodes) {
+                for (int i = 0; i < 3; i++) {
+                    if (node.slots[i] == null) {
+                        float slotX = node.getSlotStartX(i);
+                        float slotY = node.getSlotStartY(i);
+                        float dist = (float) Math.hypot(dropX - slotX, dropY - slotY);
+
+                        if (dist < minDist) {
+                            minDist = dist;
+                            bestNode = node;
+                            bestSlot = i;
+                        }
+                    }
+                }
+            }
+
+            if (bestNode != null && minDist < 200f) {
+                TreeNode newNode = new TreeNode(bestNode, bestSlot);
+                bestNode.slots[bestSlot] = newNode;
+                allNodes.add(newNode);
+
+                if (trunkNode != null) trunkNode.updateAbsolute();
+                return true;
+            }
+            return false;
+        }
+
+        private boolean addLeafAt(float dropX, float dropY) {
+            TreeNode bestNode = null;
+            float minDist = Float.MAX_VALUE;
+            float bestT = 0f;
+            float bestAttachX = 0f, bestAttachY = 0f;
+
+            for (TreeNode n : allNodes) {
+                float l2 = (n.endX - n.startX)*(n.endX - n.startX) + (n.endY - n.startY)*(n.endY - n.startY);
+                float t = 0f;
+                if (l2 != 0) {
+                    t = ((dropX - n.startX)*(n.endX - n.startX) + (dropY - n.startY)*(n.endY - n.startY)) / l2;
+                    t = Math.max(0, Math.min(1, t));
+                }
+                float attachX = n.startX + t * (n.endX - n.startX);
+                float attachY = n.startY + t * (n.endY - n.startY);
+                float dist = (float) Math.hypot(dropX - attachX, dropY - attachY);
+
+                if (dist < minDist) {
+                    minDist = dist;
+                    bestNode = n;
+                    bestT = t;
+                    bestAttachX = attachX; bestAttachY = attachY;
+                }
+            }
+
+            if (bestNode != null) {
+                if (bestNode == allNodes.get(0) && bestT < 0.5f) {
+                    return false;
+                }
+
+                float offsetX = (dropX - bestAttachX) * 0.6f;
+                float offsetY = (dropY - bestAttachY) * 0.6f;
+                leaves.add(new Leaf(bestNode, bestT, offsetX, offsetY));
+                return true;
+            }
+            return false;
+        }
+
+        private boolean addFruitAt(float dropX, float dropY) {
+            Leaf closestLeaf = null;
+            float minDist = Float.MAX_VALUE;
+            float leafCurrentX = 0f;
+            float leafCurrentY = 0f;
+
+            for (Leaf l : leaves) {
+                float lx = l.node.startX + (l.node.endX - l.node.startX) * l.t + l.offsetX;
+                float ly = l.node.startY + (l.node.endY - l.node.startY) * l.t + l.offsetY;
+
+                float dist = (float) Math.hypot(dropX - lx, dropY - ly);
+                float currentRadius = 40f;
+
+                if (dist < currentRadius * 1.5f && dist < minDist) {
+                    minDist = dist;
+                    closestLeaf = l;
+                    leafCurrentX = lx;
+                    leafCurrentY = ly;
+                }
+            }
+
+            if (closestLeaf != null && closestLeaf.fruits.size() < 6) {
+                float maxOffset = 0.6f;
+                float dx = dropX - leafCurrentX;
+                float dy = dropY - leafCurrentY;
+                float currentRadius = 40f;
+
+                float factorX = dx / currentRadius;
+                float factorY = dy / currentRadius;
+
+                if (factorX > maxOffset) factorX = maxOffset;
+                if (factorX < -maxOffset) factorX = -maxOffset;
+                if (factorY > maxOffset) factorY = maxOffset;
+                if (factorY < -maxOffset) factorY = -maxOffset;
+
+                closestLeaf.fruits.add(new Fruit(factorX, factorY, currentlyDraggedOrb.fruitSubType));
+                return true;
+            }
+            return false;
         }
 
         private void notifyChange(String hint) {
             if (listener != null) {
-                listener.onTreeChanged(growth, water, sun, care, hint);
+                listener.onStateChanged(collectedResources, hint);
             }
         }
     }
