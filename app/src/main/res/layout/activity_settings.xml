@@ -47,31 +47,6 @@
         android:progress="50" />
 
     <!-- Czas -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Czas gry"
-        android:textColor="@color/text_primary"
-        android:textSize="18sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/txtTimeValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="30 sek"
-        android:textColor="@color/text_hint"
-        android:textSize="16sp" />
-
-    <SeekBar
-        android:id="@+id/seekTime"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="36dp"
-        android:max="120"
-        android:progress="30" />
 
     <Button
         android:id="@+id/btnSaveSettings"

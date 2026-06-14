@@ -9,8 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    private SeekBar seekVolume, seekTime;
-    private TextView txtTimeValue;
+    private SeekBar seekVolume;
     private TextView txtVolumeValue;
 
 
@@ -22,20 +21,15 @@ public class SettingsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_settings);
 
         seekVolume = findViewById(R.id.seekVolume);
-        seekTime = findViewById(R.id.seekTime);
-        txtTimeValue = findViewById(R.id.txtTimeValue);
         txtVolumeValue = findViewById(R.id.txtVolumeValue);
 
         prefs = getSharedPreferences("settings", MODE_PRIVATE);
 
         // Load saved settings
         int volume = prefs.getInt("volume", 50);
-        int time = prefs.getInt("time", 30);
 
         seekVolume.setProgress(volume);
-        seekTime.setProgress(time);
         txtVolumeValue.setText(volume + " %");
-        txtTimeValue.setText(time + " sek");
 
         // 🎵 Głośność
         seekVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -48,18 +42,6 @@ public class SettingsActivity extends AppCompatActivity {
                 MusicServiceHelper.setVolume(vol);
 
                 prefs.edit().putInt("volume", progress).apply();
-            }
-
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-
-        // ⏱️ Czas
-        seekTime.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                txtTimeValue.setText(progress + " sek");
-                prefs.edit().putInt("time", progress).apply();
             }
 
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
